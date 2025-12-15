@@ -9,6 +9,7 @@ A tiny Python agent that reads recent git commits from any remote and produces s
   - Tweet-sized update (≤280 chars; ~270 target)  
   - LinkedIn blurb (concise + impact line)  
 - Optional Gemini polish for tweets (`--gemini-model`, requires `GOOGLE_API_KEY`).
+- Timesheet-friendly output (`--timesheet`) to summarize work logs.
 
 ## Requirements
 - Python 3.11+ (for `google-generativeai` wheels).  
@@ -46,6 +47,11 @@ python tools/social_updates.py \
   --gemini-model gemini-1.5-flash
 ```
 
+Timesheet format:
+```bash
+python tools/social_updates.py --timesheet --timesheet-hours 0.5
+```
+
 Flags:
 - `--remote` remote git URL (default: Bitbucket shopycart SSH).
 - `--branch` branch name, falls back to `master` if `main` missing.
@@ -53,6 +59,8 @@ Flags:
 - `--since`/`--until` date filters (`YYYY-MM-DD`).
 - `--depth` shallow clone depth (default 20).
 - `--gemini-model` Gemini model name to polish tweets (optional).
+- `--timesheet` switch to timesheet output.
+- `--timesheet-hours` hours per commit in timesheet output (default 0.5h).
 
 ## Output
 For each commit, prints:
