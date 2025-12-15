@@ -1,0 +1,22 @@
+# Virtual environments and Python caches
+.venv/
+__pycache__/
+*.pyc
+
+# Environment files
+.env
+
+# Local tools/cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# Local pyenv build
+.pyenv/
+
+# Cursor/terminal metadata
+terminals/
+.cursor/
+
+
