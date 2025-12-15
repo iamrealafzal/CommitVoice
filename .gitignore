@@ -3,6 +3,7 @@
 dev_venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
 # Environment files
 .env
