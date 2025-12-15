@@ -1,9 +1,10 @@
 """
-Generate tweet and LinkedIn-ready snippets from recent git commits.
+CommitVoice: generate tweet, LinkedIn, or timesheet snippets from recent git commits.
 
 Usage examples:
-    social-updates --remote git@bitbucket.org:afzal--lakdawala/shopycart.git --branch main --limit 5
-    social-updates --since "2024-01-01" --gemini-model gemini-1.5-flash
+    commitvoice --remote git@bitbucket.org:afzal--lakdawala/shopycart.git --branch main --limit 5
+    commitvoice --since "2024-01-01" --gemini-model gemini-1.5-flash
+    commitvoice --timesheet --timesheet-hours 0.5
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ def run_git(args: Sequence[str], cwd: Path) -> Tuple[int, str, str]:
 
 def clone_repo(remote: str, branch: str, depth: int) -> Path:
     """Clone the repository into a temporary directory; fallback to master if needed."""
-    temp_dir = Path(tempfile.mkdtemp(prefix="social-updates-"))
+    temp_dir = Path(tempfile.mkdtemp(prefix="commitvoice-"))
     target_branch = branch
     code, _, err = run_git(
         ["clone", "--quiet", f"--depth={depth}", "--branch", target_branch, remote, str(temp_dir)],

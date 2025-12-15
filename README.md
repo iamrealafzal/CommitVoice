@@ -1,6 +1,6 @@
-# Git Commit Social Updates Agent
+# CommitVoice
 
-A tiny Python agent that reads recent git commits from any remote and produces shareable tweet- and LinkedIn-ready snippets. Optional Gemini support polishes tweets for a more human tone while keeping commit hashes intact.
+A tiny Python agent that reads recent git commits from any remote and produces shareable tweet- and LinkedIn-ready snippets. Optional Gemini support polishes tweets for a more human tone while keeping commit hashes intact. A timesheet mode formats entries for quick logging.
 
 ## Features
 - Shallow-clone from a remote URL (SSH/HTTPS), with branch and date filters.
@@ -29,7 +29,7 @@ If you need to pin a Python version, use pyenv (install Python 3.11+), then recr
 ## Usage
 Basic run:
 ```bash
-python tools/social_updates.py \
+commitvoice \
   --remote git@bitbucket.org:afzal--lakdawala/shopycart.git \
   --branch main \
   --limit 5
@@ -37,19 +37,19 @@ python tools/social_updates.py \
 
 Date filter:
 ```bash
-python tools/social_updates.py --since "2024-01-01" --until "2024-12-31"
+commitvoice --since "2024-01-01" --until "2024-12-31"
 ```
 
 Use Gemini to humanize tweets (requires `GOOGLE_API_KEY` in env or `.env`):
 ```bash
-python tools/social_updates.py \
+commitvoice \
   --remote git@bitbucket.org:afzal--lakdawala/shopycart.git \
   --gemini-model gemini-1.5-flash
 ```
 
 Timesheet format:
 ```bash
-python tools/social_updates.py --timesheet --timesheet-hours 0.5
+commitvoice --timesheet --timesheet-hours 0.5
 ```
 
 Flags:
@@ -68,12 +68,12 @@ For each commit, prints:
 - LinkedIn blurb with files touched and an impact line.
 
 ## Reusing as an agent
-- Wrap `main()` from `tools/social_updates.py` or import and call `parse_commits` + `make_tweet`/`make_linkedin`.
+- Wrap `main()` from `commitvoice.cli` or import and call `parse_commits` + `make_tweet`/`make_linkedin`.
 - Swap `print_updates` with your own sink (e.g., post to APIs or save to files).
 - Adjust prompts in `make_tweet`/`enhance_with_gemini` to fit tone/brand.
 
 ## Versioning
-- Initial public release: `v0.1.0` (current).
+- Current: `v0.2.0` (CommitVoice rename + timesheet mode).
 - Plan: semantic versioning. Next milestones: file-output option, per-commit templating, configurable impact lines.
 
 ## License
