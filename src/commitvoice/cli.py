@@ -193,23 +193,24 @@ def make_linkedin(
     llm_provider: Optional[str] = None,
     llm_model: Optional[str] = None,
 ) -> str:
-    """Construct a short LinkedIn blurb and optionally polish it with an LLM."""
+    """Construct a summary-style LinkedIn blurb and optionally polish it with an LLM."""
     files = commit.get("files", [])
     files_preview = ", ".join(files[:4]) + (" +" if len(files) > 4 else "")
     date_part = commit["date"].split(" ")[0] if commit.get("date") else ""
     base = "\n".join(
         [
-            f"Commit {commit['hash'][:7]} on {date_part}",
-            f"Update: {commit['subject']}",
-            f"- Files: {files_preview or 'See diff'}",
+            f"Summary for {commit['hash'][:7]} - {commit['subject']}",
+            "Timeline:",
+            f"- {date_part}: Updated files {files_preview or 'See diff'}",
             "- Impact: Improves implementation and keeps the codebase moving.",
         ]
     )
 
     return enhance_with_llm(
         prompt=(
-            "Rewrite this commit summary into a clear, professional LinkedIn-style update. "
-            "Keep it concise (2-4 short lines), avoid hashtags, and preserve the commit hash. "
+            "Rewrite this into a clear, professional LinkedIn-style summary with a title and a short timeline. "
+            "Keep the first line as a concise title, then 1-3 bullet points forming a timeline (date first), "
+            "avoid hashtags, and preserve the commit hash. "
             f"Draft:\n{base}"
         ),
         provider=llm_provider,
