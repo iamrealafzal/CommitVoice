@@ -188,18 +188,34 @@ def make_tweet(
     )
 
 
-def make_linkedin(commit: dict) -> str:
-    """Construct a short LinkedIn blurb."""
+def make_linkedin(
+    commit: dict,
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None,
+) -> str:
+    """Construct a short LinkedIn blurb and optionally polish it with an LLM."""
     files = commit.get("files", [])
     files_preview = ", ".join(files[:4]) + (" +" if len(files) > 4 else "")
     date_part = commit["date"].split(" ")[0] if commit.get("date") else ""
-    lines = [
-        f"Commit {commit['hash'][:7]} on {date_part}",
-        f"Update: {commit['subject']}",
-        f"- Files: {files_preview or 'See diff'}",
-        "- Impact: Improves implementation and keeps the codebase moving.",
-    ]
-    return "\n".join(lines)
+    base = "\n".join(
+        [
+            f"Commit {commit['hash'][:7]} on {date_part}",
+            f"Update: {commit['subject']}",
+            f"- Files: {files_preview or 'See diff'}",
+            "- Impact: Improves implementation and keeps the codebase moving.",
+        ]
+    )
+
+    return enhance_with_llm(
+        prompt=(
+            "Rewrite this commit summary into a clear, professional LinkedIn-style update. "
+            "Keep it concise (2-4 short lines), avoid hashtags, and preserve the commit hash. "
+            f"Draft:\n{base}"
+        ),
+        provider=llm_provider,
+        model=llm_model,
+        fallback=base,
+    )
 
 
 def print_updates(
@@ -215,7 +231,7 @@ def print_updates(
         print("=" * 60)
         print(f"Commit {commit['hash'][:7]} by {commit['author']} on {commit['date']}")
         print("\nTweet:\n" + make_tweet(commit, llm_provider, llm_model))
-        print("\nLinkedIn:\n" + make_linkedin(commit))
+        print("\nLinkedIn:\n" + make_linkedin(commit, llm_provider, llm_model))
         print()
 
 
