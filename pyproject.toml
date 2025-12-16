@@ -9,6 +9,7 @@ authors = [{ name = "iamrealafzal", email = "afzalmlakdawala@gmail.com" }]
 dependencies = [
     "google-generativeai>=0.7.0",
     "python-dotenv>=1.0.1",
+    "openai>=1.0.0",
 ]
 
 [project.scripts]

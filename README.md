@@ -8,13 +8,16 @@ A tiny Python agent that reads recent git commits from any remote and produces s
 - Generate:  
   - Tweet-sized update (≤280 chars; ~270 target)  
   - LinkedIn blurb (concise + impact line)  
-- Optional Gemini polish for tweets (`--gemini-model`, requires `GOOGLE_API_KEY`).
+- Optional LLM polish for tweets:
+  - Gemini (`--llm-provider gemini`, `GOOGLE_API_KEY`)
+  - OpenAI (`--llm-provider openai`, `OPENAI_API_KEY`)
 - Timesheet-friendly output (`--timesheet`) to summarize work logs.
 
 ## Requirements
-- Python 3.11+ (for `google-generativeai` wheels).  
+- Python 3.11+ (for `google-generativeai` and modern OpenAI client).  
 - Git available on PATH.
 - For Gemini polish: `google-generativeai` and `GOOGLE_API_KEY`.
+- For OpenAI polish: `openai` and `OPENAI_API_KEY`.
 
 ## Install
 ```bash
@@ -44,7 +47,16 @@ Use Gemini to humanize tweets (requires `GOOGLE_API_KEY` in env or `.env`):
 ```bash
 commitvoice \
   --remote git@bitbucket.org:afzal--lakdawala/shopycart.git \
-  --gemini-model gemini-1.5-flash
+  --llm-provider gemini \
+  --llm-model gemini-1.5-flash
+```
+
+Use OpenAI to humanize tweets (requires `OPENAI_API_KEY` in env or `.env`):
+```bash
+commitvoice \
+  --remote git@bitbucket.org:afzal--lakdawala/shopycart.git \
+  --llm-provider openai \
+  --llm-model gpt-4.1-mini
 ```
 
 Timesheet format:
@@ -58,7 +70,9 @@ Flags:
 - `--limit` number of commits (default 5).
 - `--since`/`--until` date filters (`YYYY-MM-DD`).
 - `--depth` shallow clone depth (default 20).
-- `--gemini-model` Gemini model name to polish tweets (optional).
+- `--llm-provider` LLM provider for tweet polish (`gemini`, `openai`).
+- `--llm-model` LLM model name (e.g. `gemini-1.5-flash`, `gpt-4.1-mini`).
+- `--gemini-model` (deprecated) alias for `--llm-model` with Gemini provider.
 - `--timesheet` switch to timesheet output.
 - `--timesheet-hours` hours per commit in timesheet output (default 0.5h).
 

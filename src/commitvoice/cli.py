@@ -105,7 +105,7 @@ def shorten(text: str, width: int) -> str:
     return textwrap.shorten(text, width=width, placeholder="…")
 
 
-def enhance_with_gemini(prompt: str, model: str, fallback: str) -> str:
+def _enhance_with_gemini(prompt: str, model: str, fallback: str) -> str:
     """Send prompt to Gemini if available; otherwise return fallback."""
     try:
         import google.generativeai as genai  # type: ignore
@@ -125,22 +125,65 @@ def enhance_with_gemini(prompt: str, model: str, fallback: str) -> str:
         return fallback
 
 
-def make_tweet(commit: dict, ai_model: Optional[str] = None) -> str:
-    """Construct a concise tweet-sized update; optionally polish with Gemini."""
+def _enhance_with_openai(prompt: str, model: str, fallback: str) -> str:
+    """Send prompt to OpenAI if available; otherwise return fallback."""
+    try:
+        from openai import OpenAI  # type: ignore
+    except ImportError:
+        return fallback
+
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        return fallback
+
+    client = OpenAI(api_key=api_key)
+    try:
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        choice = response.choices[0]
+        text = getattr(choice.message, "content", "") or fallback
+        return shorten(text.strip(), 270)
+    except Exception:
+        return fallback
+
+
+def enhance_with_llm(
+    prompt: str,
+    provider: Optional[str],
+    model: Optional[str],
+    fallback: str,
+) -> str:
+    """Route to the configured LLM provider, or return fallback."""
+    if not provider or not model:
+        return fallback
+    if provider == "gemini":
+        return _enhance_with_gemini(prompt, model, fallback)
+    if provider == "openai":
+        return _enhance_with_openai(prompt, model, fallback)
+    return fallback
+
+
+def make_tweet(
+    commit: dict,
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None,
+) -> str:
+    """Construct a concise tweet-sized update and optionally polish with an LLM."""
     files = commit.get("files", [])
     files_preview = ", ".join(files[:3]) + (" +" if len(files) > 3 else "")
     base = f"{commit['subject']} [{commit['hash'][:7]}]"
     detail = f"Files: {files_preview}" if files_preview else "Code update"
     draft = shorten(f"{base}\n{detail}", 270)
-    if not ai_model:
-        return draft
-    return enhance_with_gemini(
+    return enhance_with_llm(
         prompt=(
             "Rewrite this commit note into a friendly, concise, developer-focused tweet. "
             "Keep it under 270 characters, avoid hashtags, and keep the hash id intact. "
             f"Draft: {draft}"
         ),
-        model=ai_model,
+        provider=llm_provider,
+        model=llm_model,
         fallback=draft,
     )
 
@@ -159,7 +202,11 @@ def make_linkedin(commit: dict) -> str:
     return "\n".join(lines)
 
 
-def print_updates(commits: List[dict], ai_model: Optional[str] = None) -> None:
+def print_updates(
+    commits: List[dict],
+    llm_provider: Optional[str] = None,
+    llm_model: Optional[str] = None,
+) -> None:
     """Print tweet + LinkedIn text for each commit."""
     if not commits:
         print("No commits found for the provided range.")
@@ -167,7 +214,7 @@ def print_updates(commits: List[dict], ai_model: Optional[str] = None) -> None:
     for commit in commits:
         print("=" * 60)
         print(f"Commit {commit['hash'][:7]} by {commit['author']} on {commit['date']}")
-        print("\nTweet:\n" + make_tweet(commit, ai_model))
+        print("\nTweet:\n" + make_tweet(commit, llm_provider, llm_model))
         print("\nLinkedIn:\n" + make_linkedin(commit))
         print()
 
@@ -195,8 +242,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--until", help='Only include commits up to this date (e.g., "2024-12-31").')
     parser.add_argument("--depth", type=int, default=20, help="Shallow clone depth; increase for older commits.")
     parser.add_argument(
+        "--llm-provider",
+        choices=["gemini", "openai"],
+        help="LLM provider to polish tweets (e.g., gemini, openai).",
+    )
+    parser.add_argument(
+        "--llm-model",
+        help="LLM model name (e.g., gemini-1.5-flash, gpt-4.1-mini).",
+    )
+    parser.add_argument(
         "--gemini-model",
-        help="Optional Gemini model name to polish tweets (requires GOOGLE_API_KEY).",
+        help="Deprecated alias for --llm-model with --llm-provider=gemini.",
     )
     parser.add_argument(
         "--timesheet",
@@ -218,12 +274,23 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         repo_path = clone_repo(args.remote, args.branch, args.depth)
         commits = parse_commits(repo_path, args.limit, args.since, args.until)
+
+        # Derive LLM provider/model with backward compatibility for --gemini-model.
+        llm_provider = args.llm_provider
+        llm_model = args.llm_model
+        if not llm_provider and args.gemini_model:
+            llm_provider = "gemini"
+            llm_model = args.gemini_model
+
         if args.timesheet:
             print_timesheet(commits, hours=args.timesheet_hours)
         else:
-            if args.gemini_model:
-                print("Using Gemini for tweet polish. Ensure GOOGLE_API_KEY is set.", file=sys.stderr)
-            print_updates(commits, ai_model=args.gemini_model)
+            if llm_provider and llm_model:
+                if llm_provider == "gemini":
+                    print("Using Gemini for tweet polish. Ensure GOOGLE_API_KEY is set.", file=sys.stderr)
+                elif llm_provider == "openai":
+                    print("Using OpenAI for tweet polish. Ensure OPENAI_API_KEY is set.", file=sys.stderr)
+            print_updates(commits, llm_provider=llm_provider, llm_model=llm_model)
     except Exception as exc:  # noqa: BLE001
         print(f"Error: {exc}", file=sys.stderr)
         return 1
